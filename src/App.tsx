@@ -4,14 +4,14 @@ type Prize = { label: string; weight?: number };
 
 // ✅ 8 wedges (Luggage Tag repeated twice)
 const PRIZES: Prize[] = [
-  { label: 'Tote Bag' },
-  { label: 'Phone Holder' },
-  { label: 'Luggage Tag' },
-  { label: 'Pouch' },
-  { label: 'Phone Ring' },
-  { label: 'Ez-link Card' },
-  { label: 'Towel' },
-  { label: 'Luggage Tag' }, // repeated
+  { label: "Tote Bag" },
+  { label: "Phone Holder" },
+  { label: "Luggage Tag" },
+  { label: "Pouch" },
+  { label: "Phone Ring" },
+  { label: "Ez-link Card" },
+  { label: "Towel" },
+  { label: "Luggage Tag" }, // repeated
 ];
 
 // Weighted pick (defaults to equal odds if weight not set)
@@ -33,6 +33,10 @@ export default function App() {
   const [lastWinner, setLastWinner] = useState<string | null>(null);
 
   const wheelRef = useRef<HTMLDivElement>(null);
+  const rotationRef = useRef(0);
+
+  // 🔊 spin audio (public/wheel-tick.mp3)
+  const spinAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const n = PRIZES.length; // 8
   const slice = 360 / n;
@@ -47,26 +51,40 @@ export default function App() {
 
   // ✅ Red/white alternating + thin separators so wedges always read cleanly
   const wheelGradient = (() => {
-    const border = 0.7; // degrees for separator line (0.4–1.2 feels good)
+    const border = 0.7;
 
     const stops = segments.map((_, idx) => {
       const start = idx * slice;
       const end = idx === n - 1 ? 360 : (idx + 1) * slice;
 
-      const color = idx % 2 === 0 ? '#EE2536' : '#FFFFFF';
-      const line = 'rgba(0,0,0,0.12)';
+      const color = idx % 2 === 0 ? "#EE2536" : "#FFFFFF";
+      const line = "rgba(0,0,0,0.12)";
 
       const a = start.toFixed(4);
       const b = (start + border).toFixed(4);
       const c = (end - border).toFixed(4);
       const d = end.toFixed(4);
 
-      // line at start edge, solid slice, line at end edge
       return `${line} ${a}deg ${b}deg, ${color} ${b}deg ${c}deg, ${line} ${c}deg ${d}deg`;
     });
 
-    return `conic-gradient(${stops.join(',')})`;
+    return `conic-gradient(${stops.join(",")})`;
   })();
+
+  function startSpinSound() {
+    const a = spinAudioRef.current;
+    if (!a) return;
+    a.currentTime = 0;
+    a.loop = false;
+    a.play().catch(() => {});
+  }
+
+  function stopSpinSound() {
+    const a = spinAudioRef.current;
+    if (!a) return;
+    a.pause();
+    a.currentTime = 0;
+  }
 
   function doSpin() {
     if (spinning) return;
@@ -74,36 +92,36 @@ export default function App() {
     setWinner(null);
     setSpinning(true);
 
+    // 🔊 start sound on user gesture (button click)
+    startSpinSound();
+
     const pickedIdx = weightedPickIndex(PRIZES);
     const picked = segments[pickedIdx];
 
     const fullRotations = 40 + Math.floor(Math.random() * 3); // 4–6 full rotations
     const jitter = Math.random() * 10 - 5;
 
-    // Current rotation (keep it bounded for nicer math)
     const current = rotationRef.current;
     const currentMod = ((current % 360) + 360) % 360;
 
-    // We want the pointer (top) to land on picked.centerDeg
-    // So wheel rotation mod 360 should become (360 - centerDeg)
     const targetMod = (360 - picked.centerDeg + 360) % 360;
-
-    // Smallest forward delta to reach targetMod from currentMod
     const delta = (targetMod - currentMod + 360) % 360;
 
     const finalDeg = current + fullRotations * 360 + delta + jitter;
 
     const el = wheelRef.current;
     if (el) {
-      el.style.transition = 'none';
+      el.style.transition = "none";
       void el.offsetWidth; // force reflow
-      el.style.transition = 'transform 3.4s cubic-bezier(0.12, 0.82, 0.2, 1)';
+      el.style.transition =
+        "transform 3.4s cubic-bezier(0.12, 0.82, 0.2, 1)";
       el.style.transform = `rotate(${finalDeg}deg)`;
     }
 
     rotationRef.current = finalDeg;
 
     window.setTimeout(() => {
+      stopSpinSound();
       setWinner(picked.label);
       setLastWinner(picked.label);
       setSpinning(false);
@@ -123,10 +141,14 @@ export default function App() {
       // ignore
     }
   }
-  const rotationRef = useRef(0);
+
+  const audioSrc = `${import.meta.env.BASE_URL}wheel-tick.mp3`;
 
   return (
     <div className="page">
+      {/* 🔊 Put audio in the DOM; BASE_URL fixes GitHub Pages paths */}
+      <audio ref={spinAudioRef} src={audioSrc} preload="auto" />
+
       <header className="header">
         <div>
           <img
@@ -165,13 +187,7 @@ export default function App() {
                     transform: `rotate(${s.centerDeg}deg) translateY(-38%)`,
                   }}
                 >
-                  <span
-                    style={{
-                      transform: 'rotate(90deg)', // keeps text readable
-                    }}
-                  >
-                    {s.label}
-                  </span>
+                  <span style={{ transform: "rotate(90deg)" }}>{s.label}</span>
                 </div>
               ))}
 
@@ -184,7 +200,7 @@ export default function App() {
 
         <aside className="side">
           <button className="primaryBtn" onClick={doSpin} disabled={spinning}>
-            {spinning ? 'Spinning…' : 'Spin the Wheel'}
+            {spinning ? "Spinning…" : "Spin the Wheel"}
           </button>
 
           <div className="panel">
@@ -192,7 +208,7 @@ export default function App() {
 
             {!winner ? (
               <div className="panelBody subtle">
-                {spinning ? 'Good luck…' : 'Tap “Spin the Wheel” to start.'}
+                {spinning ? "Good luck…" : 'Tap “Spin the Wheel” to start.'}
               </div>
             ) : (
               <div className="panelBody">
@@ -212,17 +228,14 @@ export default function App() {
               {PRIZES.map((p, idx) => (
                 <div key={`${p.label}-${idx}`} className="listRow">
                   <span>{p.label}</span>
-                  <span className="chip">Gift</span>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="panel small">
-            <div className="panelTitle">Booth tips</div>
+            <div className="panelTitle">History</div>
             <div className="panelBody subtle">
-              Works best in fullscreen on a laptop connected to a big display.
-              Tablets can run the same URL in Chrome/Safari.
               {lastWinner ? (
                 <div style={{ marginTop: 8 }}>
                   Last winner: <b>{lastWinner}</b>
@@ -235,8 +248,8 @@ export default function App() {
 
       <footer className="footer">
         <span className="footSubtle">
-          Note: No inventory tracking. Outcomes are random based on prize
-          weights (if set).
+          Note: No inventory tracking. Outcomes are random based on prize weights
+          (if set).
         </span>
       </footer>
     </div>
