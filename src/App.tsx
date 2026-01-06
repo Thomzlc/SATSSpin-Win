@@ -30,7 +30,7 @@ function weightedPickIndex(items: Prize[]) {
 function playSpinSound() {
   const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
   const duration = 3400;
-  const startTime = audioCtx.currentTime;
+  const startTime = Date.now();
 
   let intervalId: number;
 
@@ -41,22 +41,22 @@ function playSpinSound() {
     oscillator.connect(gainNode);
     gainNode.connect(audioCtx.destination);
 
-    oscillator.frequency.value = 180 + Math.random() * 40;
-    oscillator.type = 'square';
+    oscillator.frequency.value = 400 + Math.random() * 200;
+    oscillator.type = 'sine';
 
-    gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.03);
+    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
 
     oscillator.start(audioCtx.currentTime);
-    oscillator.stop(audioCtx.currentTime + 0.03);
+    oscillator.stop(audioCtx.currentTime + 0.08);
   };
 
   const scheduleClicks = () => {
-    const elapsed = Date.now() - startTime * 1000;
+    const elapsed = Date.now() - startTime;
     const progress = Math.min(elapsed / duration, 1);
 
     const easedProgress = 1 - Math.pow(1 - progress, 3);
-    const interval = 20 + easedProgress * 180;
+    const interval = 60 - easedProgress * 50;
 
     if (progress < 1) {
       playClick();
@@ -68,7 +68,11 @@ function playSpinSound() {
 
   return () => {
     if (intervalId) clearTimeout(intervalId);
-    audioCtx.close();
+    try {
+      audioCtx.close();
+    } catch {
+      // ignore
+    }
   };
 }
 
