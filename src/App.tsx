@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import React, { useRef, useState } from 'react';
 
 type Prize = { label: string; weight?: number };
 
@@ -27,63 +27,12 @@ function weightedPickIndex(items: Prize[]) {
   return items.length - 1;
 }
 
-function playSpinSound() {
-  const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-  const duration = 3400;
-  const startTime = Date.now();
-
-  let intervalId: number;
-
-  const playTack = () => {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-
-    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.06);
-    osc.type = 'square';
-
-    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0, audioCtx.currentTime + 0.06);
-
-    osc.start(audioCtx.currentTime);
-    osc.stop(audioCtx.currentTime + 0.06);
-  };
-
-  const scheduleClicks = () => {
-    const elapsed = Date.now() - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-
-    const easedProgress = 1 - Math.pow(1 - progress, 2);
-    const interval = Math.max(40, 150 - easedProgress * 120);
-
-    if (progress < 1) {
-      playTack();
-      intervalId = window.setTimeout(scheduleClicks, interval);
-    }
-  };
-
-  scheduleClicks();
-
-  return () => {
-    if (intervalId) clearTimeout(intervalId);
-    try {
-      audioCtx.close();
-    } catch {
-      // ignore
-    }
-  };
-}
-
 export default function App() {
   const [spinning, setSpinning] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
   const [lastWinner, setLastWinner] = useState<string | null>(null);
 
   const wheelRef = useRef<HTMLDivElement>(null);
-  const soundCleanupRef = useRef<(() => void) | null>(null);
 
   const n = PRIZES.length; // 8
   const slice = 360 / n;
@@ -124,11 +73,6 @@ export default function App() {
 
     setWinner(null);
     setSpinning(true);
-
-    if (soundCleanupRef.current) {
-      soundCleanupRef.current();
-    }
-    soundCleanupRef.current = playSpinSound();
 
     const pickedIdx = weightedPickIndex(PRIZES);
     const picked = segments[pickedIdx];
@@ -277,6 +221,8 @@ export default function App() {
           <div className="panel small">
             <div className="panelTitle">Booth tips</div>
             <div className="panelBody subtle">
+              Works best in fullscreen on a laptop connected to a big display.
+              Tablets can run the same URL in Chrome/Safari.
               {lastWinner ? (
                 <div style={{ marginTop: 8 }}>
                   Last winner: <b>{lastWinner}</b>
