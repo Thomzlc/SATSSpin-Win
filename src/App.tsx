@@ -77,7 +77,7 @@ export default function App() {
     const pickedIdx = weightedPickIndex(PRIZES);
     const picked = segments[pickedIdx];
 
-    const fullRotations = 4 + Math.floor(Math.random() * 3); // 4–6 full rotations
+    const fullRotations = 40 + Math.floor(Math.random() * 3); // 4–6 full rotations
     const jitter = Math.random() * 10 - 5;
 
     // Current rotation (keep it bounded for nicer math)
@@ -221,8 +221,6 @@ export default function App() {
           <div className="panel small">
             <div className="panelTitle">Booth tips</div>
             <div className="panelBody subtle">
-              Works best in fullscreen on a laptop connected to a big display.
-              Tablets can run the same URL in Chrome/Safari.
               {lastWinner ? (
                 <div style={{ marginTop: 8 }}>
                   Last winner: <b>{lastWinner}</b>
