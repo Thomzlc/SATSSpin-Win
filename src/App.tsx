@@ -27,12 +27,58 @@ function weightedPickIndex(items: Prize[]) {
   return items.length - 1;
 }
 
+function playSpinSound() {
+  const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  const duration = 3400;
+  const startTime = audioCtx.currentTime;
+
+  let intervalId: number;
+
+  const playClick = () => {
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.frequency.value = 180 + Math.random() * 40;
+    oscillator.type = 'square';
+
+    gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.03);
+
+    oscillator.start(audioCtx.currentTime);
+    oscillator.stop(audioCtx.currentTime + 0.03);
+  };
+
+  const scheduleClicks = () => {
+    const elapsed = Date.now() - startTime * 1000;
+    const progress = Math.min(elapsed / duration, 1);
+
+    const easedProgress = 1 - Math.pow(1 - progress, 3);
+    const interval = 20 + easedProgress * 180;
+
+    if (progress < 1) {
+      playClick();
+      intervalId = window.setTimeout(scheduleClicks, interval);
+    }
+  };
+
+  scheduleClicks();
+
+  return () => {
+    if (intervalId) clearTimeout(intervalId);
+    audioCtx.close();
+  };
+}
+
 export default function App() {
   const [spinning, setSpinning] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
   const [lastWinner, setLastWinner] = useState<string | null>(null);
 
   const wheelRef = useRef<HTMLDivElement>(null);
+  const soundCleanupRef = useRef<(() => void) | null>(null);
 
   const n = PRIZES.length; // 8
   const slice = 360 / n;
@@ -73,6 +119,11 @@ export default function App() {
 
     setWinner(null);
     setSpinning(true);
+
+    if (soundCleanupRef.current) {
+      soundCleanupRef.current();
+    }
+    soundCleanupRef.current = playSpinSound();
 
     const pickedIdx = weightedPickIndex(PRIZES);
     const picked = segments[pickedIdx];
