@@ -34,32 +34,33 @@ function playSpinSound() {
 
   let intervalId: number;
 
-  const playClick = () => {
-    const oscillator = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
+  const playTack = () => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
 
-    oscillator.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
 
-    oscillator.frequency.value = 400 + Math.random() * 200;
-    oscillator.type = 'sine';
+    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.06);
+    osc.type = 'square';
 
-    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0, audioCtx.currentTime + 0.06);
 
-    oscillator.start(audioCtx.currentTime);
-    oscillator.stop(audioCtx.currentTime + 0.08);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.06);
   };
 
   const scheduleClicks = () => {
     const elapsed = Date.now() - startTime;
     const progress = Math.min(elapsed / duration, 1);
 
-    const easedProgress = 1 - Math.pow(1 - progress, 3);
-    const interval = 60 - easedProgress * 50;
+    const easedProgress = 1 - Math.pow(1 - progress, 2);
+    const interval = Math.max(40, 150 - easedProgress * 120);
 
     if (progress < 1) {
-      playClick();
+      playTack();
       intervalId = window.setTimeout(scheduleClicks, interval);
     }
   };
